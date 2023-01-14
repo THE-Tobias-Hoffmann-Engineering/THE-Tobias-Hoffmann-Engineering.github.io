@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>THE – Tobias Hoffmann Engineering</title>
+    <style>
+footer {
+  margin-top: 1em;
+}
+    </style>
+  </head>
+  <body>
+    <header>
+    </header>
+    <main>
+      <noscript>
+        This page requires Javascript.
+      </noscript>
+    </main>
+    <footer>
+    </footer>
+    <script>
+function getTagEls(...names) {
+  return names.map((name) => document.getElementsByTagName(name)[0]);
+}
+
+const [header, main, footer] = getTagEls('header', 'main', 'footer');
+
+// --
+function _makeNICElement(nameIdClasses) {
+  const na = nameIdClasses.split(/(\\?[.#][^.#]+)/);
+  let id = '', classes = [];
+  na.splice(1).forEach((s) => {
+    const c0 = s.charCodeAt(0);
+    if (c0 === 0x23) { // #
+      id = s.slice(1);
+    } else if (c0 === 0x2e) { // .
+      classes.push(s.slice(1));
+    }
+  });
+
+  const el = document.createElement(na[0]);
+  id && (el.id = id);
+  classes.length && (el.className = classes.join(' '));
+  return el;
+}
+
+function _renderOne([nameIdClasses, ...args]) {
+  const el = _makeNICElement(nameIdClasses);
+  if (!Array.isArray(args[0])) {
+    const arg = args.shift();
+    if (typeof arg === 'object') {
+      for (const k in arg) { // (or null)
+        el[k] = arg[k];
+      }
+      if (typeof args[0] !== 'object') {
+        el.append(args.shift());
+      }
+    } else { // string, ...
+      el.append(arg);
+    }
+  }
+  args.forEach((arg) => {
+    arg && el.append(_renderOne(arg));
+  });
+  return el;
+}
+
+function render(page) {
+  [header, main, footer].forEach((el) => {
+    if (el.localName in page) {
+      el.textContent = '';
+      page[el.localName].forEach((spec) => {
+        spec && el.append(_renderOne(spec));
+      });
+    }
+  });
+}
+
+// --
+
+(async () => {
+  main.textContent = 'Loading...';
+
+  const site = JSON.parse((await (await fetch('site.json')).text()).replace(/"(.*?)"/g, (s,m) => `"${String.fromCharCode(...m.split('').map((c) => (c.charCodeAt() - 1)))}"`));
+  site[0].footer[0][1].onclick = () => (location.hash = '#1', false);
+
+  render(site[0]);
+
+  window.onhashchange = (ev) => {
+    const num = location.hash.slice(1) || 0;
+    render(site[(num >= 0 && num < site.length) ? num : 0]);
+  };
+  if (location.hash !== '') {
+    window.onhashchange();
+  }
+
+})().catch((err) => {
+  console.error(err);
+  main.textContent = 'Error';
+});
+    </script>
+  </body>
+</html>
