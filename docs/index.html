@@ -45,19 +45,16 @@ function _makeNICElement(nameIdClasses) {
   return el;
 }
 
-function _renderOne([nameIdClasses, ...args]) {
+function _renderOne(spec) {
+  if (!Array.isArray(spec)) { // string, number, ...
+    return spec;
+  }
+  const [nameIdClasses, ...args] = spec;
   const el = _makeNICElement(nameIdClasses);
-  if (!Array.isArray(args[0])) {
+  if (typeof args[0] === 'object' && !Array.isArray(args[0])) { // props
     const arg = args.shift();
-    if (typeof arg === 'object') {
-      for (const k in arg) { // (or null)
-        el[k] = arg[k];
-      }
-      if (typeof args[0] !== 'object') {
-        el.append(args.shift());
-      }
-    } else { // string, ...
-      el.append(arg);
+    for (const k in arg) { // (or null)
+      el[k] = arg[k];
     }
   }
   args.forEach((arg) => {
